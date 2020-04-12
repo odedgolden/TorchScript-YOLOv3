@@ -10,7 +10,7 @@ class YOLOLayer(nn.Module):
 
         :param anchors: A list of the masked anchors with the format: [(x_i,y_i),...]
         :param num_classes: Maximum number of classes that will be predicted from one grid cell
-        :param input_size: The expected image size in pixels, input_size == image width == image height
+        :param image_size: The expected image size in pixels, input_size == image width == image height
         """
 
         super(YOLOLayer, self).__init__()
