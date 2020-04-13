@@ -26,6 +26,11 @@ class YOLOLayer(nn.Module):
         self.image_size = image_size
         self.grid_size = image_size  # The grid should cover the image exactly
         self.stride = 1.0
+        self.grid_x = torch.zeros((len(anchors), 2))
+        self.grid_y = torch.zeros((len(anchors), 2))
+        self.scaled_anchors = torch.zeros((len(anchors), 2))
+        self.anchor_w = torch.zeros((len(anchors), 2))
+        self.anchor_h = torch.zeros((len(anchors), 2))
 
     def forward(self, x, y=None):
         """
@@ -112,9 +117,14 @@ class YOLOLayer(nn.Module):
         self.stride = self.image_size / self.grid_size  # Calculate stride
 
         # Calculate offsets for each grid
-        self.grid_x = torch.arange(self.grid_size).repeat(self.grid_size, 1).view([1, 1, self.grid_size, self.grid_size]).type(torch.FloatTensor)
-        self.grid_y = torch.arange(self.grid_size).repeat(self.grid_size, 1).t().view([1, 1, self.grid_size, self.grid_size]).type(torch.FloatTensor)
-        self.scaled_anchors = torch.FloatTensor([(a_w / self.stride, a_h / self.stride) for a_w, a_h in self.anchors])
+        self.grid_x = torch.arange(self.grid_size).repeat(self.grid_size, 1).view([1, 1, self.grid_size, self.grid_size])
+        self.grid_y = torch.arange(self.grid_size).repeat(self.grid_size, 1).t().view([1, 1, self.grid_size, self.grid_size])
+
+        s_anchors = []
+        for a_w, a_h in self.anchors:
+            s_anchors.append((a_w / self.stride, a_h / self.stride))
+        self.scaled_anchors = torch.FloatTensor(s_anchors)
+
         if cuda:
             self.scaled_anchors.cuda()
         self.anchor_w = self.scaled_anchors[:, 0:1].view((1, self.num_anchors, 1, 1))
