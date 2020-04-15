@@ -27,9 +27,10 @@ class YOLOModule(nn.Module):
         grid_y = torch.arange(grid_size).repeat(grid_size, 1).t().view(
             [1, 1, grid_size, grid_size])
 
-        s_anchors: List[List[float, float]] = list()
+        s_anchors = [[0.0, 0.0]]
         for a_w, a_h in anchors:
             s_anchors.append([a_w / stride, a_h / stride])
+        s_anchors.pop(0)
         scaled_anchors = torch.tensor(s_anchors)
 
         if cuda:
