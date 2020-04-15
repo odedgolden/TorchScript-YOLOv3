@@ -70,7 +70,7 @@ class YOLOLayer(YOLOModule):
 
         # If grid size does not match current we compute new offsets
         if grid_size != self.grid_size:
-            grid_x, grid_y, anchor_w, anchor_h = YOLOModule.update_grid(self.image_size, grid_size, self.anchors, x.is_cuda)
+            grid_x, grid_y, anchor_w, anchor_h = self.update_grid(self.image_size, grid_size, self.anchors, x.is_cuda)
             # self.grid_x = grid_x
             # self.grid_y = grid_y
             # self.anchor_w = anchor_w

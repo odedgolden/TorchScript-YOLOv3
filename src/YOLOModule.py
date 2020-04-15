@@ -9,8 +9,7 @@ from typing import Dict, List, Tuple
 
 class YOLOModule(nn.Module):
 
-    @staticmethod
-    def update_grid(image_size: int, new_grid_size: int, anchors: List[Tuple[int, int]], cuda: bool):
+    def update_grid(self, image_size: int, new_grid_size: int, anchors: List[Tuple[int, int]], cuda: bool):
         """
 
 
@@ -20,7 +19,7 @@ class YOLOModule(nn.Module):
         :param cuda: Is Cuda available
         :return:
         """
-        grid_size = int(new_grid_size.item())  # Update grid size
+        grid_size = new_grid_size  # Update grid size
         stride = image_size / grid_size  # Calculate stride
 
         # Calculate offsets for each grid
@@ -28,7 +27,7 @@ class YOLOModule(nn.Module):
         grid_y = torch.arange(grid_size).repeat(grid_size, 1).t().view(
             [1, 1, grid_size, grid_size])
 
-        s_anchors: List[List[float, float]] = []
+        s_anchors: List[List[float, float]] = list()
         for a_w, a_h in anchors:
             s_anchors.append([a_w / stride, a_h / stride])
         scaled_anchors = torch.tensor(s_anchors)
@@ -40,17 +39,8 @@ class YOLOModule(nn.Module):
 
         return grid_x, grid_y, anchor_w, anchor_h
 
-    @staticmethod
-    def to_cpu(tensor):
-        """
-
-        :param tensor: Tensor with a single number
-        :return: The number in the tensor
-        """
-        return tensor.detach().cpu().item()
-
-    @staticmethod
-    def box_iou(box1_tensor, box2_tensor):
+    @torch.jit.ignore
+    def box_iou(self, box1_tensor: torch.Tensor, box2_tensor: torch.Tensor):
         """
         Calculating Intersection over Union of the two bounding boxes.
         Useful video explaining the idea: https://youtu.be/ANIzQ5G-XPE (thanks again Andrew)
@@ -58,13 +48,12 @@ class YOLOModule(nn.Module):
         :param box2_tensor: Bounding box tensor with shape: (batch_size, 4), where the 4 are (x, y, w, h)
         :return: Tensor of intersection boxes
         """
-        intersection = YOLOModule.box_intersection(box1_tensor, box2_tensor)
-        union = YOLOModule.box_union(box1_tensor, box2_tensor)
+        intersection = self.box_intersection(box1_tensor, box2_tensor)
+        union = self.box_union(box1_tensor, box2_tensor)
         return intersection / union
 
-
-    @staticmethod
-    def box_union(box1_tensor, box2_tensor):
+    @torch.jit.ignore
+    def box_union(self, box1_tensor: torch.Tensor, box2_tensor: torch.Tensor):
         """
 
         :param box1_tensor: Bounding box tensor with shape: (batch_size, 4), where the 4 are (x, y, w, h)
@@ -72,30 +61,27 @@ class YOLOModule(nn.Module):
         :return: Union tensor of the two boxes tensors
         """
 
-        intersection = YOLOModule.box_union(box1_tensor, box2_tensor)
+        intersection = self.box_intersection(box1_tensor, box2_tensor)
         union = box1_tensor[:, 0] * box1_tensor[:, 3] + box2_tensor[:, 0] * box2_tensor[:, 3] - intersection
         return union
 
-
-    @staticmethod
-    def box_intersection(box1_tensor, box2_tensor):
+    @torch.jit.ignore
+    def box_intersection(self, box1_tensor: torch.Tensor, box2_tensor: torch.Tensor) -> torch.Tensor:
         """
 
         :param box1_tensor: Bounding box tensor with shape: (batch_size, 4), where the 4 are (x, y, w, h)
         :param box2_tensor: Bounding box tensor with shape: (batch_size, 4), where the 4 are (x, y, w, h)
         :return: Intersection tensor of the two boxes tensors
         """
-        w = YOLOModule.one_dim_overlap(box1_tensor[:, 0], box1_tensor[:, 2], box1_tensor[:, 1], box1_tensor[:, 3])
-        h = YOLOModule.one_dim_overlap(box2_tensor[:, 0], box2_tensor[:, 2], box2_tensor[:, 1], box2_tensor[:, 3])
-        if w < 0 or h < 0:
-            area = 0
-        else:
-            area = w * h
-        return area
+        w_tensor = self.one_dim_overlap(box1_tensor[:, 0], box1_tensor[:, 2], box1_tensor[:, 1], box1_tensor[:, 3])
+        h_tensor = self.one_dim_overlap(box2_tensor[:, 0], box2_tensor[:, 2], box2_tensor[:, 1], box2_tensor[:, 3])
 
+        area_tensor = torch.min(w_tensor*h_tensor, torch.zeros_like(h_tensor))
 
-    @staticmethod
-    def one_dim_overlap(x1_tensor, w1_tensor, x2_tensor, w2_tensor):
+        return area_tensor
+
+    @torch.jit.ignore
+    def one_dim_overlap(self, x1_tensor, w1_tensor, x2_tensor, w2_tensor):
         """
 
         :param x1_tensor:
