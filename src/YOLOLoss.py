@@ -3,6 +3,9 @@ from torch import nn
 from src.YOLOModule import YOLOModule
 
 
+# All code should be compatible with the supported types mentioned here:
+# https://pytorch.org/docs/master/jit_unsupported.html
+
 class YOLOLoss(YOLOModule):
     def __init__(self):
         super(YOLOLoss, self).__init__()
@@ -10,8 +13,8 @@ class YOLOLoss(YOLOModule):
         self.bce_loss = nn.BCELoss()  # For Class Prediction
 
     def forward(self, x, y):
-        self.metrics, total_loss = self.calculate_metrics(pred_boxes=pred_boxes, pred_cls=pred_cls, targets=y, x=x_0,
-                                                          y=y_0, w=w, h=h, pred_conf=pred_conf)
+        # self.metrics, total_loss = self.calculate_metrics(pred_boxes=pred_boxes, pred_cls=pred_cls, targets=y, x=x_0,
+        #                                                   y=y_0, w=w, h=h, pred_conf=pred_conf)
 
         return
 

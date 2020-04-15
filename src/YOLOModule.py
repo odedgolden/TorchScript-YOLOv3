@@ -3,8 +3,42 @@ from torch import nn
 from typing import Dict, List, Tuple
 
 
+# All code should be compatible with the supported types mentioned here:
+# https://pytorch.org/docs/master/jit_unsupported.html
+
+
 class YOLOModule(nn.Module):
 
+    @staticmethod
+    def update_grid(image_size: int, new_grid_size: int, anchors: List[Tuple[int, int]], cuda: bool):
+        """
+
+
+        :param anchors:
+        :param image_size:
+        :param new_grid_size: New grid size derived from the actual input size - i.e. new_grid_size=416
+        :param cuda: Is Cuda available
+        :return:
+        """
+        grid_size = int(new_grid_size.item())  # Update grid size
+        stride = image_size / grid_size  # Calculate stride
+
+        # Calculate offsets for each grid
+        grid_x = torch.arange(grid_size).repeat(grid_size, 1).view([1, 1, grid_size, grid_size])
+        grid_y = torch.arange(grid_size).repeat(grid_size, 1).t().view(
+            [1, 1, grid_size, grid_size])
+
+        s_anchors: List[List[float, float]] = []
+        for a_w, a_h in anchors:
+            s_anchors.append([a_w / stride, a_h / stride])
+        scaled_anchors = torch.tensor(s_anchors)
+
+        if cuda:
+            scaled_anchors.cuda()
+        anchor_w = scaled_anchors[:, 0:1].view((1, len(anchors), 1, 1))
+        anchor_h = scaled_anchors[:, 1:2].view((1, len(anchors), 1, 1))
+
+        return grid_x, grid_y, anchor_w, anchor_h
 
     @staticmethod
     def to_cpu(tensor):
@@ -14,34 +48,6 @@ class YOLOModule(nn.Module):
         :return: The number in the tensor
         """
         return tensor.detach().cpu().item()
-
-
-    def update_grid(self, new_grid_size, cuda=True):
-        """
-
-
-        :param new_grid_size: New grid size derived from the actual input size - i.e. new_grid_size=416
-        :param cuda: Is Cuda available
-        :return:
-        """
-        self.grid_size = int(new_grid_size.item())  # Update grid size
-        self.stride = self.image_size / self.grid_size  # Calculate stride
-
-        # Calculate offsets for each grid
-        self.grid_x = torch.arange(self.grid_size).repeat(self.grid_size, 1).view([1, 1, self.grid_size, self.grid_size])
-        self.grid_y = torch.arange(self.grid_size).repeat(self.grid_size, 1).t().view(
-            [1, 1, self.grid_size, self.grid_size])
-
-        s_anchors: torch.jit.annotate(List[List[float, float]], [])
-        for a_w, a_h in self.anchors:
-            s_anchors.append([a_w / self.stride, a_h / self.stride])
-        self.scaled_anchors = torch.tensor(s_anchors)
-
-        if cuda:
-            self.scaled_anchors.cuda()
-        self.anchor_w = self.scaled_anchors[:, 0:1].view((1, self.num_anchors, 1, 1))
-        self.anchor_h = self.scaled_anchors[:, 1:2].view((1, self.num_anchors, 1, 1))
-
 
     @staticmethod
     def box_iou(box1_tensor, box2_tensor):

@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from typing import Dict, List, Tuple
 
 from src.YOLOModule import YOLOModule
 
@@ -9,7 +10,7 @@ from src.YOLOModule import YOLOModule
 
 
 class YOLOLayer(YOLOModule):
-    def __init__(self, anchors, num_classes, image_size=416):
+    def __init__(self, anchors: List[Tuple[int, int]], num_classes: int, image_size=416):
         """
         YOLO Layer - consistent with the darknet code at: https://github.com/pjreddie/darknet/blob/master/src/yolo_layer.c
                      and with the PyTorch-YOLOv3 code at: https://github.com/eriklindernoren/PyTorch-YOLOv3/blob/master/models.py
@@ -24,21 +25,18 @@ class YOLOLayer(YOLOModule):
         self.num_anchors = len(anchors)
         self.num_classes = num_classes
         self.threshold = 0.5
-        self.mse_loss = nn.MSELoss()  # For Bounding Box Prediction
-        self.bce_loss = nn.BCELoss()  # For Class Prediction
         self.obj_scale = 1
         self.no_obj_scale = 100
         self.metrics = {}
         self.image_size = image_size
         self.grid_size = image_size  # The grid should cover the image exactly
         self.stride = 1.0
-        self.grid_x = torch.empty((len(anchors), 2), dtype=torch.float32)
-        self.grid_y = torch.empty((len(anchors), 2), dtype=torch.float32)
-        self.scaled_anchors = torch.empty((len(anchors), 2), dtype=torch.float32)
-        self.anchor_w = torch.empty((len(anchors), 2), dtype=torch.float32)
-        self.anchor_h = torch.empty((len(anchors), 2), dtype=torch.float32)
+        self.grid_x = 0
+        self.grid_y = 0
+        self.anchor_w = 0
+        self.anchor_h = 0
 
-    def forward(self, x, y=None):
+    def forward(self, x, y=torch.tensor([42], dtype=torch.float32)):
         """
         The forward function has the following steps: 1. Extract predictions from previous layer.
                                                       2. Create prediction bounding boxes.
@@ -72,10 +70,14 @@ class YOLOLayer(YOLOModule):
 
         # If grid size does not match current we compute new offsets
         if grid_size != self.grid_size:
-            self.update_grid(grid_size, cuda=x.is_cuda)
+            grid_x, grid_y, anchor_w, anchor_h = YOLOModule.update_grid(self.image_size, grid_size, self.anchors, x.is_cuda)
+            # self.grid_x = grid_x
+            # self.grid_y = grid_y
+            # self.anchor_w = anchor_w
+            # self.anchor_h = anchor_h
 
         # Add offset and scale with anchors
-        pred_boxes = torch.FloatTensor(prediction[..., :4].shape)
+        pred_boxes = torch.tensor(prediction[..., :4].shape, dtype=torch.float32)
         if x.is_cuda:
             pred_boxes.cuda()
         pred_boxes[..., 0] = x.data + self.grid_x
@@ -94,5 +96,4 @@ class YOLOLayer(YOLOModule):
         )
 
         return output
-        # return torch.zeros((4, 2, 416, 416)), 42.0
 
