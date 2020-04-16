@@ -1,1 +1,4 @@
 ../data/images/1.jpg
+../data/images/2.jpg
+../data/images/3.jpg
+../data/images/4.jpg
