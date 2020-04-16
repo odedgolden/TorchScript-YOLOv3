@@ -12,9 +12,9 @@ class YOLOLoss(YOLOModule):
         self.mse_loss = nn.MSELoss()  # For Bounding Box Prediction
         self.bce_loss = nn.BCELoss()  # For Class Prediction
 
-    def forward(self, x, y):
-        # self.metrics, total_loss = self.calculate_metrics(pred_boxes=pred_boxes, pred_cls=pred_cls, targets=y, x=x_0,
-        #                                                   y=y_0, w=w, h=h, pred_conf=pred_conf)
+    def forward(self, predictions, ground_truth):
+        self.metrics, total_loss = self.calculate_metrics(pred_boxes=pred_boxes, pred_cls=pred_cls, targets=y, x=x_0,
+                                                          y=y_0, w=w, h=h, pred_conf=pred_conf)
 
         return
 

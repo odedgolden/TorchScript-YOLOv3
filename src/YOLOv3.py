@@ -1,6 +1,5 @@
 import torch.nn as nn
 
-from src.YOLODummy import YOLODummy
 from src.YOLOLayer import YOLOLayer
 from src.YOLOModule import YOLOModule
 

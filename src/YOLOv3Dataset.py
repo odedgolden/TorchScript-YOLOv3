@@ -1,5 +1,5 @@
 import torch
-import torch.nn as nn
+from torch.utils.data import Dataset
 from torchvision import transforms
 import torch.nn.functional as F
 
@@ -10,7 +10,7 @@ from PIL import Image
 import numpy as np
 
 
-class YOLOv3Dataset(nn.Module):
+class YOLOv3Dataset(Dataset):
 
     def __init__(self, images_list_path="../data/images_list.txt", image_size=416, should_augment=True, transform=None):
         super(YOLOv3Dataset, self).__init__()
