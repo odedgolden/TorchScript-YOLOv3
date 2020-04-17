@@ -15,7 +15,7 @@ class YOLOv3Dataset(Dataset):
     def __init__(self, images_list_path="../data/images_list.txt", image_size=416, should_augment=True, transform=None):
         super(YOLOv3Dataset, self).__init__()
         with open(images_list_path, "r") as f:
-            self.images_paths = f.readlines()
+            self.images_paths = f.read().splitlines()
         self.labels_paths = [path.replace("images", "labels")
                                  .replace(".png", ".txt")
                                  .replace(".jpg", ".txt")
@@ -70,6 +70,9 @@ class YOLOv3Dataset(Dataset):
             image_tensor, label_tensor = self.transform(image_tensor), self.transform(label_tensor)
 
         return image_path, image_tensor, label_tensor
+
+    def __len__(self):
+        return len(self.images_paths)
 
     @staticmethod
     def pad_to_square(image_tensor):
