@@ -4,6 +4,7 @@ from torchvision import transforms
 import torch.nn.functional as F
 
 import os
+import random
 
 from PIL import Image
 
@@ -70,6 +71,33 @@ class YOLOv3Dataset(Dataset):
             image_tensor, label_tensor = self.transform(image_tensor), self.transform(label_tensor)
 
         return image_path, image_tensor, label_tensor
+
+    def collate_fn(self, batch):
+        """
+        Merges a list of samples to form a mini-batch of Tensor(s). Used when using batched loading from a map-style dataset
+
+        :param batch:
+        :return:
+        """
+        paths, imgs, targets = list(zip(*batch))
+
+        # Remove empty placeholder targets
+        targets = [boxes for boxes in targets if boxes is not None]
+
+        # Add sample index to targets
+        for i, boxes in enumerate(targets):
+            boxes[:, 0] = i
+        targets = torch.cat(targets, 0)
+
+        # Selects new image size every tenth batch
+        if self.multiscale and self.batch_count % 10 == 0:
+            self.img_size = random.choice(range(self.min_size, self.max_size + 1, 32))
+
+        # Resize images to input shape
+        imgs = torch.stack([transforms.Resize(img, self.img_size) for img in imgs])
+        self.batch_count += 1
+
+        return paths, imgs, targets
 
     def __len__(self):
         return len(self.images_paths)

@@ -19,6 +19,8 @@ model = YOLOv3()
 model.eval()
 
 for batch_i, (_, imgs, targets) in enumerate(dataloader):
+    print(imgs.shape)
+    print(targets.shape)
     output = model(imgs, targets)
 script_model = torch.jit.script(model)
 
